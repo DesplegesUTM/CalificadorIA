@@ -50,7 +50,7 @@
                   <th class="w-12 text-center">Incluir</th>
                   <th>Estudiante Asignado</th>
                   <th>ID / Matrícula</th>
-                  <th>Título del Ensayo</th>
+                  <th>Título de la Actividad</th>
                   <th>Archivo</th>
                   <th>Estado Lectura</th>
                 </tr>
@@ -86,16 +86,11 @@
                       />
                     </td>
                     <td>
-                      <input 
-                        type="text" 
-                        name="documents[<%= idx %>][title]" 
-                        value="<%= doc.detectedTitle || doc.originalName %>" 
-                        class="form-input text-xs py-1"
-                      />
+                      <%= activity.title %>
                     </td>
-                    <td class="text-xs text-slate-500 max-w-xs truncate" title="<%= doc.originalName %>">
-                      <%= doc.originalName %>
-                      <div class="text-[10px] text-slate-400"><%= (doc.fileSize / 1024).toFixed(1) %> KB · <%= doc.pages %> pág(s)</div>
+                    <td class="text-xs text-slate-500 max-w-xs truncate" title="<%= doc.originalFile %>">
+                      <%= doc.originalFile %>
+                      <div class="text-[10px] text-slate-400"><%= (doc.fileSize / 1024).toFixed(1) %> KB</div>
                     </td>
                     <td>
                       <% if (doc.isLegible) { %>

@@ -97,10 +97,15 @@ async function show(req, res, next) {
     });
     if (!activity) return res.status(404).render('errors/404', { title: 'No encontrado' });
 
+    const evaluatedSubmissions = activity.submissions.filter(s => s.evaluations.length > 0);
+    const average = evaluatedSubmissions.length
+      ? evaluatedSubmissions.reduce((sum, submission) => sum + submission.evaluations[0].percentage, 0) / evaluatedSubmissions.length
+      : 0;
     const stats = {
       total: activity.submissions.length,
-      evaluated: activity.submissions.filter(s => s.evaluations.length > 0).length,
-      pending: activity.submissions.filter(s => s.evaluations.length === 0).length,
+      evaluated: evaluatedSubmissions.length,
+      pending: activity.submissions.length - evaluatedSubmissions.length,
+      average: Math.round(average * 10) / 10,
     };
 
     res.render('activities/show', { title: activity.title, activity, stats });

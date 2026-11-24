@@ -39,6 +39,32 @@ document.addEventListener('click', (event) => {
   if (button) button.parentElement.remove();
 });
 
+document.querySelectorAll('[data-import-context]').forEach(button => {
+  button.addEventListener('click', () => {
+    const fields = [
+      ['description', button.dataset.description],
+      ['objectives', button.dataset.objectives],
+      ['instructions', button.dataset.instructions],
+    ].filter(([, value]) => value && value.trim());
+
+    if (fields.length === 0) {
+      showToast('La actividad no tiene descripción, objetivos ni instrucciones para importar.', 'info');
+      return;
+    }
+
+    const replacesExisting = fields.some(([id, value]) => {
+      const field = document.getElementById(id);
+      return field && field.value.trim() && field.value !== value;
+    });
+    if (replacesExisting && !confirm('Los campos con información se reemplazarán con los datos de la actividad. ¿Continuar?')) return;
+
+    fields.forEach(([id, value]) => {
+      document.getElementById(id).value = value;
+    });
+    showToast(`Se importaron ${fields.length} campos de la actividad.`);
+  });
+});
+
 // ---- Confirm Delete ----
 window.confirmDelete = function (url, message = '¿Está seguro de eliminar este elemento?') {
   if (!confirm(message)) return;

@@ -233,7 +233,7 @@ async function main() {
         data: {
           studentId: student.id,
           activityId: activity.id,
-          title: `Resumen sobre IA - ${s.fullName}`,
+          title: activity.title,
           originalFile: `resumen_ia_${s.studentId}.pdf`,
           storedFile: `ejemplo_${s.studentId}.pdf`,
           fileSize: 102400,

@@ -158,8 +158,9 @@
                       <div class="font-medium text-slate-800"><%= sub.student ? sub.student.fullName : 'Sin nombre' %></div>
                       <div class="text-xs text-slate-400"><%= sub.student ? sub.student.email : '' %></div>
                     </td>
-                    <td class="max-w-xs truncate" title="<%= sub.title || sub.originalFile %>">
-                      <%= sub.title || sub.originalFile %>
+                    <td class="max-w-xs truncate" title="<%= sub.originalFile || sub.title || activity.title %>">
+                      <div><%= sub.title || activity.title %></div>
+                      <div class="text-xs text-slate-400"><%= sub.originalFile %></div>
                     </td>
                     <td>
                       <% if (sub.status === 'EVALUATED') { %>

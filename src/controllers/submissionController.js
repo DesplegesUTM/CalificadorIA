@@ -43,9 +43,10 @@ async function showUpload(req, res, next) {
 async function upload(req, res, next) {
   try {
     const activityId = parseInt(req.params.activityId);
+    const activity = await prisma.academicActivity.findUnique({ where: { id: activityId } });
+    if (!activity) return res.status(404).render('errors/404', { title: 'No encontrado' });
     
     if (!req.file) {
-      const activity = await prisma.academicActivity.findUnique({ where: { id: activityId } });
       return res.render('submissions/upload', {
         title: 'Importar entregas',
         activity,
@@ -67,7 +68,6 @@ async function upload(req, res, next) {
         submissionsToCreate.push({
           studentName: doc.studentName || 'Desconocido',
           studentId: doc.studentId,
-          title: doc.title,
           originalFile: doc.originalName,
           storedFile: doc.storedName,
           storedPath: doc.storedPath,
@@ -84,7 +84,6 @@ async function upload(req, res, next) {
       submissionsToCreate.push({
         studentName: path.parse(req.file.originalname).name.replace(/_/g, ' ').trim() || 'Estudiante',
         studentId: null,
-        title: pdfData.info?.Title || null,
         originalFile: req.file.originalname,
         storedFile: req.file.filename,
         storedPath: filePath,
@@ -99,6 +98,7 @@ async function upload(req, res, next) {
     res.render('submissions/preview', {
       title: 'Previsualizar entregas',
       activityId,
+      activity,
       documents: submissionsToCreate,
     });
   } catch (err) { next(err); }
@@ -113,6 +113,12 @@ async function confirmImport(req, res, next) {
       req.flash('error', 'La vista previa de importación expiró. Vuelve a cargar los archivos.');
       return res.redirect(`/entregas/actividad/${activityId}/subir`);
     }
+
+    const activity = await prisma.academicActivity.findUnique({
+      where: { id: activityId },
+      select: { id: true, title: true },
+    });
+    if (!activity) return res.status(404).render('errors/404', { title: 'No encontrado' });
 
     let submittedDocuments = req.body.documents || [];
     if (typeof submittedDocuments === 'string') {
@@ -138,10 +144,6 @@ async function confirmImport(req, res, next) {
       const studentId = Object.prototype.hasOwnProperty.call(submitted, 'studentId')
         ? (typeof submitted.studentId === 'string' ? submitted.studentId.trim() : '') || null
         : doc.studentId || null;
-      const title = Object.prototype.hasOwnProperty.call(submitted, 'title')
-        ? (typeof submitted.title === 'string' ? submitted.title.trim() : '') || null
-        : doc.title || null;
-
       // Buscar o crear estudiante
       let student = await prisma.student.findFirst({
         where: {
@@ -164,7 +166,7 @@ async function confirmImport(req, res, next) {
         data: {
           studentId: student.id,
           activityId,
-          title,
+          title: activity.title,
           originalFile: doc.originalFile || 'archivo.pdf',
           storedFile: doc.storedFile,
           fileSize: parseInt(doc.fileSize, 10) || 0,
