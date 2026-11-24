@@ -103,7 +103,9 @@ async function login(req, res) {
 
     logger.info(`[Auth] Login exitoso: ${user.email}`);
     
-    const returnTo = req.session.returnTo || '/dashboard';
+    const returnTo = req.session.returnTo === '/favicon.ico'
+      ? '/dashboard'
+      : req.session.returnTo || '/dashboard';
     delete req.session.returnTo;
     return res.redirect(returnTo);
   } catch (err) {

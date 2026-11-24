@@ -26,8 +26,10 @@ async function generateActivityReport(activityId, evaluations) {
     fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A5F' } },
     alignment: { horizontal: 'center', vertical: 'middle', wrapText: true },
     border: {
-      top: { style: 'thin' }, bottom: { style: 'thin' },
-      left: { style: 'thin' }, right: { style: 'thin' },
+      top: { style: 'thin' },
+      bottom: { style: 'thin' },
+      left: { style: 'thin' },
+      right: { style: 'thin' },
     },
   };
 
@@ -56,7 +58,11 @@ async function generateActivityReport(activityId, evaluations) {
     { header: 'Estudiante', key: 'student', width: 25 },
     { header: 'Título del trabajo', key: 'title', width: 35 },
     { header: 'Fecha evaluación', key: 'date', width: 18 },
-    ...criteriaList.map(name => ({ header: name, key: `crit_${name}`, width: 15 })),
+    ...criteriaList.map((name) => ({
+      header: name,
+      key: `crit_${name}`,
+      width: 15,
+    })),
     { header: 'Nota total', key: 'total', width: 12 },
     { header: 'Nota máxima', key: 'maxScore', width: 12 },
     { header: 'Porcentaje', key: 'percentage', width: 12 },
@@ -86,8 +92,15 @@ async function generateActivityReport(activityId, evaluations) {
       num: idx + 1,
       student: ev.submission?.student?.fullName || 'Desconocido',
       title: ev.submission?.title || 'Sin título',
-      date: ev.createdAt ? new Date(ev.createdAt).toLocaleDateString('es-ES') : '-',
-      ...Object.fromEntries(criteriaList.map(name => [`crit_${name}`, criteriaScoreMap[name] ?? '-'])),
+      date: ev.createdAt
+        ? new Date(ev.createdAt).toLocaleDateString('es-ES')
+        : '-',
+      ...Object.fromEntries(
+        criteriaList.map((name) => [
+          `crit_${name}`,
+          criteriaScoreMap[name] ?? '-',
+        ]),
+      ),
       total: ev.totalScore,
       maxScore: ev.maxScore,
       percentage: `${Math.round(ev.percentage)}%`,
@@ -103,7 +116,11 @@ async function generateActivityReport(activityId, evaluations) {
     // Color alternado de filas
     if (idx % 2 === 0) {
       row.eachCell((cell) => {
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFF8FAFC' },
+        };
       });
     }
 
@@ -112,7 +129,9 @@ async function generateActivityReport(activityId, evaluations) {
     const perc = ev.percentage || 0;
     percCell.font = {
       bold: true,
-      color: { argb: perc >= 70 ? 'FF16A34A' : perc >= 50 ? 'FFD97706' : 'FFDC2626' },
+      color: {
+        argb: perc >= 70 ? 'FF16A34A' : perc >= 50 ? 'FFD97706' : 'FFDC2626',
+      },
     };
 
     row.height = 60;
@@ -122,7 +141,10 @@ async function generateActivityReport(activityId, evaluations) {
   sheet.views = [{ state: 'frozen', ySplit: 1 }];
 
   // Auto filter
-  sheet.autoFilter = { from: 'A1', to: `${String.fromCharCode(65 + headers.length - 1)}1` };
+  sheet.autoFilter = {
+    from: 'A1',
+    to: `${String.fromCharCode(65 + headers.length - 1)}1`,
+  };
 
   // Guardar archivo
   const fileName = `evaluaciones_actividad_${activityId}_${Date.now()}.xlsx`;

@@ -62,6 +62,9 @@ app.use(session(sessionConfig));
 // Archivos estáticos
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
+// Evita que la solicitud automática del navegador altere el destino de retorno de inicio de sesión.
+app.get('/favicon.ico', (req, res) => res.status(204).end());
+
 // Variables locales globales para vistas
 app.use((req, res, next) => {
   res.locals.user = req.session?.user || null;

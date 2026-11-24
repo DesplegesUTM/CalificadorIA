@@ -143,9 +143,25 @@ async function evaluateBatch(submissionIds, progressCallback) {
     try {
       const evaluation = await evaluateSubmission(id);
       results.success.push({ submissionId: id, evaluationId: evaluation.id });
+      if (progressCallback) {
+        progressCallback({
+          current: i + 1,
+          total: submissionIds.length,
+          submissionId: id,
+          status: 'completed',
+        });
+      }
     } catch (err) {
       logger.error(`[EvaluationService] Error en entrega #${id}: ${err.message}`);
       results.failed.push({ submissionId: id, error: err.message });
+      if (progressCallback) {
+        progressCallback({
+          current: i + 1,
+          total: submissionIds.length,
+          submissionId: id,
+          status: 'failed',
+        });
+      }
     }
 
     // Pequeña pausa para evitar rate limiting

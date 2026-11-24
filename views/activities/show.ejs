@@ -34,7 +34,7 @@
         </div>
         <div class="flex gap-2">
           <a href="/actividades/<%= activity.id %>/editar" class="btn-secondary">Editar Actividad</a>
-          <a href="/exportar/actividad/<%= activity.id %>" class="btn-primary bg-emerald-600 hover:bg-emerald-700">Exportar a Excel</a>
+          <a href="/exportar/actividad/<%= activity.id %>/excel" class="btn-primary bg-emerald-600 hover:bg-emerald-700">Exportar a Excel</a>
         </div>
       </div>
 
@@ -108,6 +108,16 @@
           <a href="/entregas/actividad/<%= activity.id %>/subir" class="btn-primary text-center justify-center">
             Subir Entregas
           </a>
+        </div>
+      </div>
+
+      <div id="batch-evaluation-progress" class="hidden mb-4 rounded-lg border border-indigo-200 bg-indigo-50 p-4" role="status" aria-live="polite">
+        <div class="flex items-center justify-between gap-4 text-sm text-indigo-900">
+          <span id="batch-evaluation-message">Preparando evaluaciones...</span>
+          <span id="batch-evaluation-count" class="font-semibold"></span>
+        </div>
+        <div class="mt-2 h-2 overflow-hidden rounded-full bg-indigo-100">
+          <div id="batch-evaluation-bar" class="h-full rounded-full bg-indigo-600 transition-all duration-300" style="width: 0%"></div>
         </div>
       </div>
 

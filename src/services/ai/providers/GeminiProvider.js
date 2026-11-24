@@ -37,6 +37,41 @@ class GeminiProvider extends BaseAIProvider {
         model: this.model,
         input: prompt,
         store: false,
+        response_format: {
+          type: 'text',
+          mime_type: 'application/json',
+          schema: {
+            type: 'object',
+            properties: {
+              criteria: {
+                type: 'object',
+                properties: Object.fromEntries(params.criteria.map(criterion => [
+                  criterion.name,
+                  {
+                    type: 'object',
+                    properties: {
+                      score: { type: 'number', minimum: 0, maximum: criterion.maxScore },
+                      justification: { type: 'string' },
+                      strengths: { type: 'string' },
+                      weaknesses: { type: 'string' },
+                    },
+                    required: ['score', 'justification', 'strengths', 'weaknesses'],
+                  },
+                ])),
+                required: params.criteria.map(criterion => criterion.name),
+              },
+              totalScore: { type: 'number' },
+              feedback: { type: 'string' },
+              strengths: { type: 'string' },
+              weaknesses: { type: 'string' },
+              recommendations: { type: 'string' },
+            },
+            required: ['criteria', 'totalScore', 'feedback', 'strengths', 'weaknesses', 'recommendations'],
+          },
+        },
+        generation_config: {
+          max_output_tokens: 16384,
+        },
       });
 
       const rawText = interaction.output_text;

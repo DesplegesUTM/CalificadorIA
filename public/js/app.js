@@ -93,10 +93,18 @@ window.evaluateBatch = async function (submissionIds, btn) {
   if (!confirm(`¿Evaluar ${submissionIds.length} entregas? Este proceso puede tardar varios minutos.`)) return;
 
   const originalHTML = btn?.innerHTML;
+  const progress = document.getElementById('batch-evaluation-progress');
+  const progressMessage = document.getElementById('batch-evaluation-message');
+  const progressCount = document.getElementById('batch-evaluation-count');
+  const progressBar = document.getElementById('batch-evaluation-bar');
+
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span> Iniciando...';
+    btn.innerHTML = '<span class="spinner"></span> Iniciando evaluación...';
   }
+  if (progress) progress.classList.remove('hidden');
+  if (progressMessage) progressMessage.textContent = 'Iniciando evaluaciones con IA...';
+  if (progressCount) progressCount.textContent = `0 de ${submissionIds.length}`;
 
   try {
     const res = await fetch('/evaluaciones/evaluar-lote', {
@@ -107,19 +115,55 @@ window.evaluateBatch = async function (submissionIds, btn) {
     const data = await res.json();
 
     if (data.success) {
-      showToast(data.message || 'Evaluación masiva iniciada', 'info');
-      let attempts = 0;
-      const poll = setInterval(() => {
-        attempts++;
-        if (attempts > 60) { clearInterval(poll); return; }
-        window.location.reload();
-      }, 5000);
+      if (btn) btn.innerHTML = '<span class="spinner"></span> Evaluando...';
+      const pollBatchStatus = async () => {
+        try {
+          const statusResponse = await fetch(`/evaluaciones/lote/${encodeURIComponent(data.jobId)}`, {
+            headers: { Accept: 'application/json' },
+          });
+          const statusData = await statusResponse.json();
+          if (!statusResponse.ok || !statusData.success) {
+            throw new Error(statusData.error || 'No se pudo consultar el progreso');
+          }
+
+          const percent = statusData.total ? Math.round((statusData.completed / statusData.total) * 100) : 100;
+          if (progressMessage) {
+            progressMessage.textContent = statusData.status === 'completed'
+              ? `Evaluación finalizada: ${statusData.succeeded} correctas, ${statusData.failed} con error.`
+              : statusData.currentSubmissionId
+                ? `Evaluando entrega ${statusData.current} de ${statusData.total}...`
+                : statusData.completed
+                  ? `Evaluadas ${statusData.completed} de ${statusData.total}; iniciando la siguiente...`
+                  : 'Preparando evaluaciones...';
+          }
+          if (progressCount) progressCount.textContent = `${statusData.completed} de ${statusData.total}`;
+          if (progressBar) progressBar.style.width = `${percent}%`;
+
+          if (statusData.status === 'completed') {
+            showToast(`Evaluación finalizada: ${statusData.succeeded} correctas, ${statusData.failed} con error.`, statusData.failed ? 'info' : 'success');
+            setTimeout(() => window.location.reload(), 1200);
+            return;
+          }
+          if (statusData.status === 'failed') {
+            throw new Error(statusData.error || 'El proceso masivo no pudo completarse');
+          }
+          setTimeout(pollBatchStatus, 1500);
+        } catch (err) {
+          showToast(err.message || 'No se pudo consultar el progreso de las evaluaciones', 'error');
+          if (btn) {
+            btn.innerHTML = originalHTML;
+            btn.disabled = false;
+          }
+        }
+      };
+      pollBatchStatus();
     } else {
       showToast(data.error || 'Error', 'error');
       if (btn) {
         btn.innerHTML = originalHTML;
         btn.disabled = false;
       }
+      if (progress) progress.classList.add('hidden');
     }
   } catch (err) {
     showToast('Error de conexión al iniciar la evaluación masiva', 'error');
@@ -127,6 +171,7 @@ window.evaluateBatch = async function (submissionIds, btn) {
       btn.innerHTML = originalHTML;
       btn.disabled = false;
     }
+    if (progress) progress.classList.add('hidden');
   }
 };
 
