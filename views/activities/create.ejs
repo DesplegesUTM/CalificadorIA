@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title %> – EvaluadorIA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/app.css" />
+</head>
+<body class="bg-slate-50 font-sans text-slate-700 min-h-screen flex">
+  <%- include('../partials/sidebar') %>
+  <div class="flex-1 flex flex-col ml-64">
+    <%- include('../partials/topbar') %>
+    <main class="flex-1 p-6">
+
+      <!-- Flash messages -->
+      <% if (locals.flashMessages && flashMessages.length > 0) { %>
+        <div class="mb-4 space-y-2">
+          <% flashMessages.forEach(msg => { %>
+            <div class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium <%= msg.type === 'success' ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-red-50 border border-red-200 text-red-800' %>">
+              <%= msg.message %>
+              <button onclick="this.parentElement.remove()" class="ml-auto text-current opacity-60 hover:opacity-100">✕</button>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+
+      <!-- Breadcrumb -->
+      <nav class="flex items-center gap-2 text-sm text-slate-500 mb-4">
+        <a href="/actividades" class="hover:text-blue-600 transition">Actividades</a>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        <span class="text-slate-700 font-medium">Nueva actividad</span>
+      </nav>
+
+      <div class="max-w-2xl">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
+          <div class="mb-6">
+            <h1 class="text-xl font-bold text-slate-800">Nueva actividad</h1>
+            <p class="text-slate-500 text-sm mt-1">Define la actividad de evaluación</p>
+          </div>
+
+          <!-- Errors -->
+          <% if (locals.errors && errors.length > 0) { %>
+            <div class="mb-6 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+              <p class="text-sm font-semibold text-red-700 mb-1">Por favor corrige los siguientes errores:</p>
+              <ul class="text-sm text-red-600 space-y-1">
+                <% errors.forEach(err => { %>
+                  <li class="flex items-center gap-2">
+                    <span class="w-1 h-1 rounded-full bg-red-500 flex-shrink-0"></span>
+                    <%= err.msg || err %>
+                  </li>
+                <% }) %>
+              </ul>
+            </div>
+          <% } %>
+
+          <form action="/actividades" method="POST" class="space-y-5">
+
+            <!-- Asignatura -->
+            <div>
+              <label for="subjectId" class="block text-sm font-medium text-slate-700 mb-1.5">
+                Asignatura <span class="text-red-500">*</span>
+              </label>
+              <select
+                id="subjectId"
+                name="subjectId"
+                required
+                class="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              >
+                <option value="">Selecciona una asignatura</option>
+                <% if (locals.subjects) { subjects.forEach(s => { %>
+                  <option value="<%= s.id %>" <%= locals.body && body.subjectId == s.id ? 'selected' : '' %>><%= s.name %><% if (s.code) { %> (<%= s.code %>)<% } %></option>
+                <% }) } %>
+              </select>
+            </div>
+
+            <!-- Título -->
+            <div>
+              <label for="title" class="block text-sm font-medium text-slate-700 mb-1.5">
+                Título <span class="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                id="title"
+                name="title"
+                required
+                value="<%= locals.body && body.title ? body.title : '' %>"
+                placeholder="ej. Ensayo sobre la Revolución Industrial"
+                class="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              />
+            </div>
+
+            <!-- Descripción -->
+            <div>
+              <label for="description" class="block text-sm font-medium text-slate-700 mb-1.5">
+                Descripción <span class="text-slate-400 font-normal text-xs">(opcional)</span>
+              </label>
+              <textarea
+                id="description"
+                name="description"
+                rows="3"
+                placeholder="Breve descripción de la actividad..."
+                class="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition resize-none"
+              ><%= locals.body && body.description ? body.description : '' %></textarea>
+            </div>
+
+            <!-- Objetivos -->
+            <div>
+              <label for="objectives" class="block text-sm font-medium text-slate-700 mb-1.5">
+                Objetivos de aprendizaje <span class="text-slate-400 font-normal text-xs">(opcional)</span>
+              </label>
+              <textarea
+                id="objectives"
+                name="objectives"
+                rows="3"
+                placeholder="¿Qué aprenderán los estudiantes con esta actividad?"
+                class="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition resize-none"
+              ><%= locals.body && body.objectives ? body.objectives : '' %></textarea>
+            </div>
+
+            <!-- Instrucciones -->
+            <div>
+              <label for="instructions" class="block text-sm font-medium text-slate-700 mb-1.5">
+                Instrucciones <span class="text-slate-400 font-normal text-xs">(opcional)</span>
+              </label>
+              <textarea
+                id="instructions"
+                name="instructions"
+                rows="4"
+                placeholder="Instrucciones detalladas para los estudiantes..."
+                class="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition resize-none"
+              ><%= locals.body && body.instructions ? body.instructions : '' %></textarea>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center gap-3 pt-2">
+              <button type="submit" class="inline-flex items-center gap-2 bg-blue-700 hover:bg-blue-800 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition shadow-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                Crear actividad
+              </button>
+              <a href="/actividades" class="inline-flex items-center gap-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium px-5 py-2.5 rounded-lg text-sm transition">
+                Cancelar
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </main>
+  </div>
+  <script src="/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title><%= title %> – EvaluadorIA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/css/app.css"/>
+</head>
+<body class="bg-slate-50 font-sans text-slate-700 min-h-screen flex">
+  <%- include('../partials/sidebar') %>
+  <div class="flex-1 flex flex-col ml-64">
+    <%- include('../partials/topbar') %>
+    <main class="flex-1 p-6">
+      <% if (locals.flashMessages && flashMessages.length > 0) { %>
+        <div class="mb-4 space-y-2">
+          <% flashMessages.forEach(msg => { %>
+            <div class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium <%= msg.type === 'success' ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-red-50 border border-red-200 text-red-800' %>">
+              <%= msg.message %>
+              <button onclick="this.parentElement.remove()" class="ml-auto">✕</button>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+
+      <div class="mb-6 flex items-center justify-between">
+        <div>
+          <a href="/actividades/<%= activity.id %>" class="text-xs text-blue-600 hover:underline flex items-center gap-1 mb-1">
+            ← Volver a <%= activity.title %>
+          </a>
+          <h1 class="page-title">Editar Actividad</h1>
+          <p class="page-subtitle">Modifique los parámetros generales de la actividad académica</p>
+        </div>
+      </div>
+
+      <div class="card max-w-3xl p-6">
+        <% if (locals.errors && errors.length > 0) { %>
+          <div class="alert-error mb-6">
+            <ul class="list-disc list-inside">
+              <% errors.forEach(err => { %>
+                <li><%= err %></li>
+              <% }) %>
+            </ul>
+          </div>
+        <% } %>
+
+        <form method="POST" action="/actividades/<%= activity.id %>/editar" class="space-y-4">
+          <div class="form-group">
+            <label class="form-label" for="title">Título de la Actividad *</label>
+            <input type="text" id="title" name="title" required class="form-input" value="<%= activity.title %>" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="subjectId">Asignatura *</label>
+            <select id="subjectId" name="subjectId" required class="form-select">
+              <% subjects.forEach(s => { %>
+                <option value="<%= s.id %>" <%= s.id === activity.subjectId ? 'selected' : '' %>>
+                  <%= s.name %> (<%= s.code %>)
+                </option>
+              <% }) %>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="description">Descripción General</label>
+            <textarea id="description" name="description" rows="3" class="form-textarea"><%= activity.description || '' %></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="objectives">Objetivos de Aprendizaje</label>
+            <textarea id="objectives" name="objectives" rows="3" class="form-textarea"><%= activity.objectives || '' %></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="instructions">Instrucciones de la Entrega</label>
+            <textarea id="instructions" name="instructions" rows="4" class="form-textarea"><%= activity.instructions || '' %></textarea>
+          </div>
+
+          <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+            <a href="/actividades/<%= activity.id %>" class="btn-secondary">Cancelar</a>
+            <button type="submit" class="btn-primary">Guardar Cambios</button>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+  <script src="/js/app.js"></script>
+</body>
+</html>

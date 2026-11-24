@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title><%= title %> – EvaluadorIA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/css/app.css"/>
+</head>
+<body class="bg-slate-50 font-sans text-slate-700 min-h-screen flex">
+  <%- include('../partials/sidebar') %>
+  <div class="flex-1 flex flex-col ml-64">
+    <%- include('../partials/topbar') %>
+    <main class="flex-1 p-6">
+      <% if (errors && errors.length) { %>
+        <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          <% errors.forEach(error => { %><p><%= error %></p><% }) %>
+        </div>
+      <% } %>
+
+      <div class="mb-6 flex items-center justify-between">
+        <div>
+          <h1 class="page-title">Gestión de usuarios</h1>
+          <p class="page-subtitle">Administradores y docentes con acceso al sistema.</p>
+        </div>
+        <button type="button" onclick="document.getElementById('create-user-modal').classList.remove('hidden')" class="btn-primary">
+          Nuevo usuario
+        </button>
+      </div>
+
+      <div class="card overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="data-table">
+            <thead><tr><th>Usuario</th><th>Rol</th><th>Estado</th><th>Creado</th><th class="text-right">Acciones</th></tr></thead>
+            <tbody>
+              <% users.forEach(userRow => { %>
+                <tr>
+                  <td>
+                    <p class="font-medium text-slate-800"><%= userRow.name %></p>
+                    <p class="text-xs text-slate-400"><%= userRow.email %></p>
+                  </td>
+                  <td><span class="badge <%= userRow.role === 'ADMIN' ? 'badge-blue' : 'badge-slate' %>"><%= userRow.role === 'ADMIN' ? 'Administrador' : 'Docente' %></span></td>
+                  <td><span class="badge <%= userRow.active ? 'badge-green' : 'badge-red' %>"><%= userRow.active ? 'Activo' : 'Inactivo' %></span></td>
+                  <td class="text-xs text-slate-500"><%= new Date(userRow.createdAt).toLocaleDateString('es-ES') %></td>
+                  <td class="text-right">
+                    <button type="button" onclick="abrirResetPassword(<%= userRow.id %>, <%- JSON.stringify(userRow.name) %>)" class="btn-secondary btn-sm mr-2">Contraseña</button>
+                    <% if (userRow.id !== user.id) { %>
+                      <button type="button" onclick="toggleUser(<%= userRow.id %>, this)" class="btn-secondary btn-sm">
+                        <%= userRow.active ? 'Desactivar' : 'Activar' %>
+                      </button>
+                    <% } %>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div id="create-user-modal" class="hidden fixed inset-0 z-50 bg-slate-900/50 flex items-center justify-center">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+      <h2 class="text-lg font-bold mb-4">Crear nuevo usuario</h2>
+      <form method="POST" action="/admin/usuarios" class="space-y-4">
+        <div><label class="form-label">Nombre</label><input name="name" required class="form-input"/></div>
+        <div><label class="form-label">Correo electrónico</label><input name="email" type="email" required class="form-input"/></div>
+        <div><label class="form-label">Contraseña</label><input name="password" type="password" minlength="6" required class="form-input"/></div>
+        <div><label class="form-label">Rol</label><select name="role" class="form-select"><option value="TEACHER">Docente</option><option value="ADMIN">Administrador</option></select></div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="document.getElementById('create-user-modal').classList.add('hidden')" class="btn-secondary">Cancelar</button>
+          <button type="submit" class="btn-primary">Crear usuario</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="reset-password-modal" class="hidden fixed inset-0 z-50 bg-slate-900/50 flex items-center justify-center">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+      <h2 class="text-lg font-bold mb-1">Restablecer contraseña</h2>
+      <p id="reset-user-name" class="text-sm text-slate-500 mb-4"></p>
+      <form id="reset-password-form" class="space-y-4">
+        <div><label class="form-label">Nueva contraseña</label><input id="reset-password" type="password" minlength="6" required class="form-input"/></div>
+        <div class="flex justify-end gap-2">
+          <button type="button" onclick="document.getElementById('reset-password-modal').classList.add('hidden')" class="btn-secondary">Cancelar</button>
+          <button type="submit" class="btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    function abrirResetPassword(id, name) {
+      document.getElementById('reset-user-name').textContent = name;
+      document.getElementById('reset-password-modal').classList.remove('hidden');
+      document.getElementById('reset-password-form').dataset.userId = id;
+    }
+    document.getElementById('reset-password-form').addEventListener('submit', async function (event) {
+      event.preventDefault();
+      const password = document.getElementById('reset-password').value;
+      const response = await fetch('/admin/usuarios/' + this.dataset.userId + '/password', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newPassword: password })
+      });
+      const data = await response.json();
+      if (data.success) {
+        showToast('Contraseña restablecida');
+        document.getElementById('reset-password-modal').classList.add('hidden');
+      } else {
+        showToast(data.error || 'Error al restablecer la contraseña', 'error');
+      }
+    });
+  </script>
+</body>
+</html>

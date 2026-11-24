@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title><%= title %> – EvaluadorIA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/css/app.css"/>
+</head>
+<body class="bg-slate-50 font-sans text-slate-700 min-h-screen flex">
+  <%- include('../partials/sidebar') %>
+  <div class="flex-1 flex flex-col ml-64">
+    <%- include('../partials/topbar') %>
+    <main class="flex-1 p-6">
+      <div class="mb-6 flex items-center justify-between">
+        <div>
+          <a href="/evaluaciones" class="text-xs text-blue-600 hover:underline">← Volver al historial</a>
+          <h1 class="page-title mt-1">Informe de evaluación</h1>
+          <p class="page-subtitle"><%= evaluation.submission.student.fullName %> · <%= evaluation.submission.activity.title %></p>
+        </div>
+        <button
+          data-reevaluate-submission="<%= evaluation.submissionId %>"
+          class="btn-primary"
+          data-original="Re-evaluar con IA">
+          Re-evaluar con IA
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
+        <div class="card p-6 flex items-center gap-5">
+          <div class="w-24 h-24 rounded-full border-8 flex flex-col items-center justify-center
+            <%= evaluation.percentage >= 70 ? 'border-green-500 text-green-700' : evaluation.percentage >= 50 ? 'border-yellow-500 text-yellow-700' : 'border-red-500 text-red-700' %>">
+            <span class="text-2xl font-bold"><%= Math.round(evaluation.percentage) %>%</span>
+          </div>
+          <div>
+            <p class="text-xs text-slate-400 uppercase font-semibold">Nota global</p>
+            <p class="text-2xl font-bold text-slate-800"><%= evaluation.totalScore %> / <%= evaluation.maxScore %></p>
+          </div>
+        </div>
+
+        <div class="card p-6 lg:col-span-2">
+          <p class="text-xs text-slate-400 uppercase font-semibold mb-2">Retroalimentación general</p>
+          <p class="text-sm leading-relaxed"><%= evaluation.feedback || 'Sin retroalimentación registrada.' %></p>
+          <div class="mt-3 flex gap-4 text-xs text-slate-500">
+            <span>Proveedor: <strong><%= evaluation.aiProvider || 'No registrado' %></strong></span>
+            <span>Modelo: <strong><%= evaluation.aiModel || 'No registrado' %></strong></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
+        <div class="card p-5">
+          <h2 class="font-semibold text-green-700 mb-3">Fortalezas</h2>
+          <% if (evaluation.strengths) { %>
+            <p class="text-sm whitespace-pre-line"><%= evaluation.strengths %></p>
+          <% } else { %>
+            <p class="text-sm text-slate-400">No registradas</p>
+          <% } %>
+        </div>
+        <div class="card p-5">
+          <h2 class="font-semibold text-amber-700 mb-3">Aspectos a mejorar</h2>
+          <% if (evaluation.weaknesses) { %>
+            <p class="text-sm whitespace-pre-line"><%= evaluation.weaknesses %></p>
+          <% } else { %>
+            <p class="text-sm text-slate-400">No registrados</p>
+          <% } %>
+        </div>
+        <div class="card p-5">
+          <h2 class="font-semibold text-blue-700 mb-3">Recomendaciones</h2>
+          <% if (evaluation.recommendations) { %>
+            <p class="text-sm whitespace-pre-line"><%= evaluation.recommendations %></p>
+          <% } else { %>
+            <p class="text-sm text-slate-400">No registradas</p>
+          <% } %>
+        </div>
+      </div>
+
+      <div class="card overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-200">
+          <h2 class="font-semibold text-slate-800">Desglose por criterios</h2>
+        </div>
+        <% if (evaluation.criterionScores && evaluation.criterionScores.length > 0) { %>
+          <div class="overflow-x-auto">
+            <table class="data-table">
+              <thead><tr><th>Criterio</th><th>Puntuación</th><th>Justificación</th></tr></thead>
+              <tbody>
+                <% evaluation.criterionScores.forEach(score => { %>
+                  <tr>
+                    <td class="font-medium text-slate-800"><%= score.criterion.name %></td>
+                    <td class="whitespace-nowrap">
+                      <strong><%= score.score %></strong> / <%= score.maxScore %>
+                    </td>
+                    <td class="text-sm text-slate-600"><%= score.justification || 'Sin justificación' %></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } else { %>
+          <p class="p-6 text-sm text-slate-400">Esta evaluación no incluye puntuaciones por criterio.</p>
+        <% } %>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>

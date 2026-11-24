@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title %> – EvaluadorIA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/app.css" />
+</head>
+<body class="bg-slate-50 font-sans text-slate-700 min-h-screen flex">
+  <%- include('../partials/sidebar') %>
+  <div class="flex-1 flex flex-col ml-64">
+    <%- include('../partials/topbar') %>
+    <main class="flex-1 p-6">
+
+      <!-- Flash messages -->
+      <% if (locals.flashMessages && flashMessages.length > 0) { %>
+        <div class="mb-4 space-y-2">
+          <% flashMessages.forEach(msg => { %>
+            <div class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium <%= msg.type === 'success' ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-red-50 border border-red-200 text-red-800' %>">
+              <%= msg.message %>
+              <button onclick="this.parentElement.remove()" class="ml-auto text-current opacity-60 hover:opacity-100">✕</button>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+
+      <!-- Page Header -->
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-800">Actividades</h1>
+          <p class="text-slate-500 text-sm mt-1">Gestiona las actividades de evaluación</p>
+        </div>
+        <a href="/actividades/nueva" class="inline-flex items-center gap-2 bg-blue-700 hover:bg-blue-800 text-white font-semibold px-4 py-2.5 rounded-lg text-sm transition shadow-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          Nueva actividad
+        </a>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-4">
+        <form method="GET" action="/actividades" class="flex items-center gap-4">
+          <div class="flex items-center gap-2">
+            <label class="text-sm font-medium text-slate-600">Filtrar por asignatura:</label>
+            <select name="subjectId" onchange="this.form.submit()" class="px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+              <option value="">Todas las asignaturas</option>
+              <% if (locals.subjects) { subjects.forEach(s => { %>
+                <option value="<%= s.id %>" <%= locals.selectedSubjectId && selectedSubjectId == s.id ? 'selected' : '' %>><%= s.name %></option>
+              <% }) } %>
+            </select>
+          </div>
+          <% if (locals.selectedSubjectId && selectedSubjectId) { %>
+            <a href="/actividades" class="text-sm text-slate-500 hover:text-slate-700 flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+              Limpiar filtro
+            </a>
+          <% } %>
+        </form>
+      </div>
+
+      <!-- Table Card -->
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200">
+        <% if (locals.activities && activities.length > 0) { %>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-200">
+                  <th class="text-left px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Título</th>
+                  <th class="text-left px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Asignatura</th>
+                  <th class="text-left px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Docente</th>
+                  <th class="text-left px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Entregas</th>
+                  <th class="text-left px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Rúbrica</th>
+                  <th class="text-left px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Contexto</th>
+                  <th class="text-right px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Acciones</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                <% activities.forEach(activity => { %>
+                  <tr class="hover:bg-slate-50 transition">
+                    <td class="px-6 py-3.5">
+                      <p class="font-semibold text-slate-800"><%= activity.title %></p>
+                      <% if (activity.description) { %>
+                        <p class="text-xs text-slate-400 mt-0.5 truncate max-w-xs"><%= activity.description %></p>
+                      <% } %>
+                    </td>
+                    <td class="px-6 py-3.5">
+                      <% if (activity.subject) { %>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded bg-blue-50 text-blue-700 text-xs font-medium">
+                          <%= activity.subject.name %>
+                        </span>
+                      <% } else { %>
+                        <span class="text-slate-400 text-xs">—</span>
+                      <% } %>
+                    </td>
+                    <td class="px-6 py-3.5 text-slate-600 text-sm">
+                      <%= activity.user ? activity.user.name : (activity.subject && activity.subject.user ? activity.subject.user.name : '—') %>
+                    </td>
+                    <td class="px-6 py-3.5">
+                      <span class="inline-flex items-center gap-1.5 text-slate-700">
+                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                        </svg>
+                        <%= activity._count ? activity._count.submissions : 0 %>
+                      </span>
+                    </td>
+                    <td class="px-6 py-3.5">
+                      <% if (activity.rubric) { %>
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-50 text-green-700 text-xs font-semibold border border-green-200">
+                          <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                          Sí
+                        </span>
+                      <% } else { %>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 text-xs font-semibold border border-slate-200">No</span>
+                      <% } %>
+                    </td>
+                    <td class="px-6 py-3.5">
+                      <% if (activity.context) { %>
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-50 text-green-700 text-xs font-semibold border border-green-200">
+                          <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                          Sí
+                        </span>
+                      <% } else { %>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 text-xs font-semibold border border-slate-200">No</span>
+                      <% } %>
+                    </td>
+                    <td class="px-6 py-3.5">
+                      <div class="flex items-center justify-end">
+                        <a href="/actividades/<%= activity.id %>" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-xs font-medium transition">
+                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                          </svg>
+                          Ver
+                        </a>
+                      </div>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } else { %>
+          <div class="flex flex-col items-center justify-center py-20 px-4">
+            <div class="w-16 h-16 rounded-full bg-indigo-50 flex items-center justify-center mb-4">
+              <svg class="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+              </svg>
+            </div>
+            <p class="text-slate-700 font-semibold text-lg">No hay actividades</p>
+            <p class="text-slate-400 text-sm mt-1 mb-5">
+              <% if (locals.selectedSubjectId && selectedSubjectId) { %>
+                No hay actividades para esta asignatura
+              <% } else { %>
+                Crea tu primera actividad para comenzar
+              <% } %>
+            </p>
+            <a href="/actividades/nueva" class="inline-flex items-center gap-2 bg-blue-700 hover:bg-blue-800 text-white font-semibold px-4 py-2.5 rounded-lg text-sm transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+              </svg>
+              Nueva actividad
+            </a>
+          </div>
+        <% } %>
+      </div>
+
+    </main>
+  </div>
+  <script src="/js/app.js"></script>
+</body>
+</html>

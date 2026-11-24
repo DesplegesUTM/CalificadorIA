@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title><%= title %> – EvaluadorIA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/css/app.css"/>
+</head>
+<body class="bg-slate-50 font-sans text-slate-700 min-h-screen flex">
+  <%- include('../partials/sidebar') %>
+  <div class="flex-1 flex flex-col ml-64">
+    <%- include('../partials/topbar') %>
+    <main class="flex-1 p-6">
+      <div class="mb-6">
+        <h1 class="page-title">Configuración de proveedores de IA</h1>
+        <p class="page-subtitle">Administre las credenciales y el modelo utilizado por las evaluaciones.</p>
+      </div>
+
+      <% const providers = ['GEMINI', 'OPENAI', 'CLAUDE']; %>
+      <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
+        <% providers.forEach(provider => { %>
+          <% const config = (configs || []).find(item => item.provider === provider); %>
+          <% const names = { GEMINI: 'Google Gemini', OPENAI: 'OpenAI', CLAUDE: 'Anthropic Claude' }; %>
+          <% const defaultModels = { GEMINI: 'gemini-3.8-flash', OPENAI: 'gpt-4o', CLAUDE: 'claude-3-5-sonnet-20241022' }; %>
+          <div class="card p-5">
+            <div class="flex items-start justify-between mb-4">
+              <div>
+                <h2 class="font-bold text-slate-800"><%= names[provider] %></h2>
+                <p class="text-xs text-slate-400 mt-1"><%= provider %></p>
+              </div>
+              <% if (config && config.isDefault) { %>
+                <span class="badge badge-green">Predeterminado</span>
+              <% } else { %>
+                <span class="badge badge-slate">Disponible</span>
+              <% } %>
+            </div>
+
+            <form method="POST" action="/admin/configuracion-ia" class="space-y-3">
+              <input type="hidden" name="id" value="<%= config ? config.id : '' %>"/>
+              <input type="hidden" name="provider" value="<%= provider %>"/>
+              <input type="hidden" name="name" value="<%= config ? config.name : names[provider] %>"/>
+
+              <div>
+                <label class="form-label">Modelo</label>
+                <input name="model" class="form-input" value="<%= config && config.model ? config.model : defaultModels[provider] %>"/>
+              </div>
+              <div>
+                <label class="form-label">API Key</label>
+                <input name="apiKey" type="password" class="form-input" autocomplete="off"
+                  value="<%= config && config.apiKey ? '***' : '' %>"
+                  placeholder="<%= config && config.apiKey ? 'Clave almacenada (oculta)' : 'Ingrese la API Key' %>"/>
+              </div>
+              <label class="flex items-center gap-2 text-sm">
+                <input type="checkbox" name="isDefault" <%= config && config.isDefault ? 'checked' : '' %>/>
+                Usar como proveedor predeterminado
+              </label>
+
+              <div id="status-<%= provider %>" class="text-xs min-h-5"></div>
+              <div class="flex gap-2">
+                <button type="submit" class="btn-primary flex-1">Guardar</button>
+                <button type="button" class="btn-secondary flex-1"
+                  onclick="probarProveedor('<%= provider %>', this.form)">
+                  Probar conexión
+                </button>
+              </div>
+            </form>
+          </div>
+        <% }) %>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    async function probarProveedor(provider, form) {
+      const model = form.elements.model.value;
+      let apiKey = form.elements.apiKey.value;
+      if (apiKey === '***') apiKey = '';
+      const status = document.getElementById('status-' + provider);
+      status.innerHTML = 'Probando...';
+      const response = await fetch('/admin/configuracion-ia/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider, apiKey, model })
+      });
+      const data = await response.json();
+      status.innerHTML = data.valid
+        ? '<span class="text-green-700">✓ ' + data.message + '</span>'
+        : '<span class="text-red-700">✕ ' + data.message + '</span>';
+      showToast(data.message, data.valid ? 'success' : 'error');
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title><%= title %> – EvaluadorIA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/css/app.css"/>
+</head>
+<body class="bg-slate-50 font-sans text-slate-700 min-h-screen flex">
+  <%- include('../partials/sidebar') %>
+  <div class="flex-1 flex flex-col ml-64">
+    <%- include('../partials/topbar') %>
+    <main class="flex-1 p-6">
+      <% if (locals.flashMessages && flashMessages.length > 0) { %>
+        <div class="mb-4 space-y-2">
+          <% flashMessages.forEach(msg => { %>
+            <div class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium <%= msg.type === 'success' ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-red-50 border border-red-200 text-red-800' %>">
+              <%= msg.message %>
+              <button onclick="this.parentElement.remove()" class="ml-auto">✕</button>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+
+      <div class="mb-6 flex items-center justify-between">
+        <div>
+          <a href="/actividades/<%= activity.id %>" class="text-xs text-blue-600 hover:underline flex items-center gap-1 mb-1">
+            ← Volver a <%= activity.title %>
+          </a>
+          <h1 class="page-title">Cargar Entregas de Estudiantes</h1>
+          <p class="page-subtitle">Soporta documentos individuales en PDF o archivos comprimidos ZIP exportados de plataformas Moodle.</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="md:col-span-2">
+          <div class="card p-6">
+            <% if (locals.errors && errors.length > 0) { %>
+              <div class="alert-error mb-6">
+                <ul class="list-disc list-inside">
+                  <% errors.forEach(err => { %>
+                    <li><%= err %></li>
+                  <% }) %>
+                </ul>
+              </div>
+            <% } %>
+
+            <form method="POST" action="/entregas/actividad/<%= activity.id %>/subir" enctype="multipart/form-data" class="space-y-6">
+              <div class="upload-zone" id="drop-zone">
+                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3 text-blue-600">
+                  <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                </div>
+                <p class="text-sm font-medium text-slate-700 mb-1">Haz clic para seleccionar o arrastra el archivo aquí</p>
+                <p class="text-xs text-slate-400 mb-3">Formatos soportados: <strong>.pdf</strong> o <strong>.zip</strong> (Máx: 50MB)</p>
+                <span class="upload-filename text-xs font-semibold text-blue-600 block"></span>
+                <input type="file" name="file" id="file" accept=".pdf,.zip" class="hidden" required onchange="handleFileChange(this)" />
+              </div>
+
+              <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                <a href="/actividades/<%= activity.id %>" class="btn-secondary">Cancelar</a>
+                <button type="submit" class="btn-primary" id="btn-submit">Procesar Archivo</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <div class="card p-5 bg-blue-50/50 border-blue-200">
+            <h3 class="font-semibold text-blue-900 text-sm mb-2">📦 Importación Masiva Moodle</h3>
+            <p class="text-xs text-slate-600 leading-relaxed mb-3">
+              Puedes descargar directamente todas las entregas desde tu aula virtual Moodle mediante la opción:
+              <br/><strong class="text-slate-800">"Descargar todas las entregas"</strong>.
+            </p>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              El sistema identificará automáticamente los nombres de los estudiantes, IDs de entrega y extraerá el texto de cada archivo PDF para su posterior validación.
+            </p>
+          </div>
+
+          <div class="card p-5">
+            <h3 class="font-semibold text-slate-800 text-sm mb-2">📄 Entrega Individual</h3>
+            <p class="text-xs text-slate-500 leading-relaxed">
+              Si subes un archivo PDF individual, podrás asignar manualmente el estudiante o permitir que el extractor intente inferir sus datos a partir de la portada del documento.
+            </p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    function handleFileChange(input) {
+      if (input.files && input.files[0]) {
+        const file = input.files[0];
+        document.querySelector('.upload-filename').textContent = `Archivo seleccionado: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+      }
+    }
+  </script>
+</body>
+</html>

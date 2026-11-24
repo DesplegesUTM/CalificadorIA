@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title><%= title %> – EvaluadorIA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/css/app.css"/>
+</head>
+<body class="bg-slate-50 font-sans text-slate-700 min-h-screen flex">
+  <%- include('../partials/sidebar') %>
+  <div class="flex-1 flex flex-col ml-64">
+    <%- include('../partials/topbar') %>
+    <main class="flex-1 p-6">
+      <% if (locals.flashMessages && flashMessages.length > 0) { %>
+        <div class="mb-4 space-y-2">
+          <% flashMessages.forEach(msg => { %>
+            <div class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium <%= msg.type === 'success' ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-red-50 border border-red-200 text-red-800' %>">
+              <%= msg.message %>
+              <button type="button" data-dismiss-flash class="ml-auto">✕</button>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+
+      <div class="mb-6 flex items-center justify-between">
+        <div>
+          <a href="/actividades" class="text-xs text-blue-600 hover:underline flex items-center gap-1 mb-1">
+            ← Volver a Actividades
+          </a>
+          <h1 class="page-title"><%= activity.title %></h1>
+          <p class="page-subtitle"><%= activity.subject ? activity.subject.name : '' %> · Creado por <%= activity.user ? activity.user.name : '' %></p>
+        </div>
+        <div class="flex gap-2">
+          <a href="/actividades/<%= activity.id %>/editar" class="btn-secondary">Editar Actividad</a>
+          <a href="/exportar/actividad/<%= activity.id %>" class="btn-primary bg-emerald-600 hover:bg-emerald-700">Exportar a Excel</a>
+        </div>
+      </div>
+
+      <!-- Métricas rápidas -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="card p-4">
+          <p class="text-xs text-slate-500 font-medium uppercase">Total Entregas</p>
+          <p class="text-2xl font-bold text-slate-800 mt-1"><%= stats.total %></p>
+        </div>
+        <div class="card p-4">
+          <p class="text-xs text-emerald-600 font-medium uppercase">Evaluadas</p>
+          <p class="text-2xl font-bold text-emerald-600 mt-1"><%= stats.evaluated %></p>
+        </div>
+        <div class="card p-4">
+          <p class="text-xs text-amber-500 font-medium uppercase">Pendientes</p>
+          <p class="text-2xl font-bold text-amber-600 mt-1"><%= stats.pending %></p>
+        </div>
+        <div class="card p-4">
+          <p class="text-xs text-blue-600 font-medium uppercase">Promedio General</p>
+          <p class="text-2xl font-bold text-blue-700 mt-1"><%= stats.average %>%</p>
+        </div>
+      </div>
+
+      <!-- Tarjetas de Configuración -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <!-- Contexto Académico -->
+        <div class="card p-5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="font-semibold text-slate-800">Contexto Académico</h3>
+              <% if (activity.context) { %>
+                <span class="badge badge-green">Configurado</span>
+              <% } else { %>
+                <span class="badge badge-yellow">Pendiente</span>
+              <% } %>
+            </div>
+            <p class="text-xs text-slate-500 mb-4">Objetivos, texto base e instrucciones detalladas para alimentar a la IA durante la evaluación.</p>
+          </div>
+          <a href="/contextos/actividad/<%= activity.id %>" class="btn-secondary text-center justify-center">
+            <%= activity.context ? 'Editar Contexto' : 'Definir Contexto' %>
+          </a>
+        </div>
+
+        <!-- Rúbrica -->
+        <div class="card p-5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="font-semibold text-slate-800">Rúbrica de Evaluación</h3>
+              <% if (activity.rubric) { %>
+                <span class="badge badge-green"><%= activity.rubric.criteria ? activity.rubric.criteria.length : 0 %> Criterios (<%= activity.rubric.totalScore %> pts)</span>
+              <% } else { %>
+                <span class="badge badge-yellow">Sin Rúbrica</span>
+              <% } %>
+            </div>
+            <p class="text-xs text-slate-500 mb-4">Criterios dinámicos con puntuaciones y niveles de desempeño para calificar.</p>
+          </div>
+          <a href="/rubricas/actividad/<%= activity.id %>" class="btn-secondary text-center justify-center">
+            <%= activity.rubric ? 'Editar Rúbrica' : 'Crear Rúbrica' %>
+          </a>
+        </div>
+
+        <!-- Carga de Entregas -->
+        <div class="card p-5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="font-semibold text-slate-800">Importar Ensayos / Tareas</h3>
+              <span class="badge badge-blue">PDF / ZIP Moodle</span>
+            </div>
+            <p class="text-xs text-slate-500 mb-4">Sube un archivo PDF individual o un paquete comprimido ZIP descargado directamente de Moodle.</p>
+          </div>
+          <a href="/entregas/actividad/<%= activity.id %>/subir" class="btn-primary text-center justify-center">
+            Subir Entregas
+          </a>
+        </div>
+      </div>
+
+      <!-- Listado de Entregas -->
+      <div class="card overflow-hidden">
+        <div class="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
+          <h2 class="font-semibold text-slate-800">Entregas de Estudiantes</h2>
+          <% if (activity.submissions && activity.submissions.length > 0) { %>
+            <div class="flex gap-2">
+              <a href="/entregas/actividad/<%= activity.id %>" class="text-sm text-blue-600 hover:underline self-center mr-2">Ver todas</a>
+              <button
+                type="button"
+                data-evaluate-batch="<%= activity.submissions.filter(s => s.status === 'PENDING').map(s => s.id).join(',') %>"
+                class="btn-primary bg-indigo-600 hover:bg-indigo-700 btn-sm">
+                ⚡ Evaluar Pendientes con IA
+              </button>
+            </div>
+          <% } %>
+        </div>
+
+        <% if (activity.submissions && activity.submissions.length > 0) { %>
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Estudiante</th>
+                  <th>Título / Archivo</th>
+                  <th>Estado</th>
+                  <th>Calificación</th>
+                  <th>Fecha</th>
+                  <th class="text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% activity.submissions.forEach(sub => { %>
+                  <tr>
+                    <td class="font-medium">
+                      <div class="font-medium text-slate-800"><%= sub.student ? sub.student.fullName : 'Sin nombre' %></div>
+                      <div class="text-xs text-slate-400"><%= sub.student ? sub.student.email : '' %></div>
+                    </td>
+                    <td class="max-w-xs truncate" title="<%= sub.title || sub.originalFile %>">
+                      <%= sub.title || sub.originalFile %>
+                    </td>
+                    <td>
+                      <% if (sub.status === 'EVALUATED') { %>
+                        <span class="badge badge-green">Evaluado</span>
+                      <% } else if (sub.status === 'PENDING') { %>
+                        <span class="badge badge-yellow">Pendiente</span>
+                      <% } else if (sub.status === 'ILLEGIBLE') { %>
+                        <span class="badge badge-slate">Ilegible</span>
+                      <% } else { %>
+                        <span class="badge badge-red">Error</span>
+                      <% } %>
+                    </td>
+                    <td>
+                      <% if (sub.evaluations && sub.evaluations.length > 0) { %>
+                        <span class="font-bold text-slate-800"><%= sub.evaluations[0].totalScore %></span>
+                        <span class="text-xs text-slate-400">/ <%= sub.evaluations[0].maxScore %> (<%= Math.round(sub.evaluations[0].percentage) %>%)</span>
+                      <% } else { %>
+                        <span class="text-slate-400 text-xs">--</span>
+                      <% } %>
+                    </td>
+                    <td class="text-xs text-slate-500">
+                      <%= new Date(sub.createdAt).toLocaleDateString('es-ES') %>
+                    </td>
+                    <td class="text-right space-x-2">
+                      <% if (sub.evaluations && sub.evaluations.length > 0) { %>
+                        <a href="/evaluaciones/<%= sub.evaluations[0].id %>" class="btn-secondary btn-sm">Ver Evaluación</a>
+                      <% } else { %>
+                        <button type="button" data-evaluate-submission="<%= sub.id %>" class="btn-primary btn-sm bg-blue-600 hover:bg-blue-700">
+                          Evaluar IA
+                        </button>
+                      <% } %>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } else { %>
+          <div class="empty-state p-8">
+            <p class="text-slate-500 mb-2">No se han cargado entregas para esta actividad todavía.</p>
+            <a href="/entregas/actividad/<%= activity.id %>/subir" class="btn-primary btn-sm">Subir primeras entregas</a>
+          </div>
+        <% } %>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>

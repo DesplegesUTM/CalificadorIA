@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title><%= title %> – EvaluadorIA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/css/app.css"/>
+</head>
+<body class="bg-slate-50 font-sans text-slate-700 min-h-screen flex">
+  <%- include('../partials/sidebar') %>
+  <div class="flex-1 flex flex-col ml-64">
+    <%- include('../partials/topbar') %>
+    <main class="flex-1 p-6">
+      <% if (locals.flashMessages && flashMessages.length > 0) { %>
+        <div class="mb-4 space-y-2">
+          <% flashMessages.forEach(msg => { %>
+            <div class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium <%= msg.type === 'success' ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-red-50 border border-red-200 text-red-800' %>">
+              <%= msg.message %>
+              <button type="button" data-dismiss-flash class="ml-auto">✕</button>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+
+      <div class="mb-6 flex items-center justify-between">
+        <div>
+          <a href="/actividades/<%= activity.id %>" class="text-xs text-blue-600 hover:underline flex items-center gap-1 mb-1">
+            ← Volver a <%= activity.title %>
+          </a>
+          <h1 class="page-title">Constructor Dinámico de Rúbricas</h1>
+          <p class="page-subtitle">Define los criterios evaluativos, descripciones y ponderaciones exactas.</p>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="text-right">
+            <span class="text-xs text-slate-400 uppercase font-semibold">Puntuación Total</span>
+            <div class="text-2xl font-black text-blue-700"><span id="total-score-badge">0</span> pts</div>
+          </div>
+          <button type="button" class="btn-primary" id="btn-save-rubric">
+            Guardar Rúbrica
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <!-- Panel lateral con datos generales y plantillas -->
+        <div class="lg:col-span-1 space-y-6">
+          <div class="card p-5">
+            <h3 class="font-semibold text-slate-800 mb-3 text-sm">Información de la Rúbrica</h3>
+            <div class="space-y-3">
+              <div class="form-group">
+                <label class="form-label" for="rubric-name">Nombre de Rúbrica</label>
+                <input type="text" id="rubric-name" class="form-input" value="<%= rubric ? rubric.name : 'Rúbrica de Evaluación Académica' %>" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="rubric-desc">Descripción (Opcional)</label>
+                <textarea id="rubric-desc" class="form-textarea" rows="2"><%= rubric ? rubric.description : '' %></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="card p-5 bg-gradient-to-br from-indigo-50/50 to-blue-50/50 border-blue-200">
+            <h3 class="font-semibold text-blue-900 mb-2 text-sm">Criterios Predefinidos</h3>
+            <p class="text-xs text-slate-600 mb-4">Carga un set estándar de 5 criterios académicos con un solo clic.</p>
+            <button type="button" id="btn-load-default-criteria" class="btn-secondary w-full text-xs justify-center bg-white">
+              Cargar Criterios Académicos
+            </button>
+          </div>
+        </div>
+
+        <!-- Lista de Criterios interactiva -->
+        <div class="lg:col-span-3 space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="font-semibold text-slate-800">Criterios de Evaluación (<span id="criteria-count">0</span>)</h2>
+            <button type="button" id="btn-add-criterion" class="btn-secondary btn-sm bg-white border-blue-200 text-blue-700 hover:bg-blue-50">
+              + Agregar Criterio
+            </button>
+          </div>
+
+          <div id="criteria-container" class="space-y-3">
+            <!-- Criterios renderizados dinámicamente -->
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    let criteria = [];
+
+    // Inicializar datos existentes
+    <% if (criteria && criteria.length > 0) { %>
+      criteria = [
+        <% criteria.forEach(c => { %>
+          {
+            id: "<%= c.id %>",
+            name: <%- JSON.stringify(c.name) %>,
+            description: <%- JSON.stringify(c.description || '') %>,
+            maxScore: <%= c.maxScore %>,
+            levels: <%- c.levels ? JSON.stringify(c.levels) : 'null' %>
+          },
+        <% }) %>
+      ];
+    <% } %>
+
+    function renderCriteria() {
+      const container = document.getElementById('criteria-container');
+      const countEl = document.getElementById('criteria-count');
+      countEl.textContent = criteria.length;
+
+      if (criteria.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state p-8 card bg-white">
+            <p class="text-slate-400 mb-3 text-sm">No hay criterios definidos todavía.</p>
+            <button type="button" data-action="add-criterion" class="btn-primary btn-sm">Agregar el primer criterio</button>
+          </div>
+        `;
+        updateTotal();
+        return;
+      }
+
+      container.innerHTML = '';
+      criteria.forEach((c, index) => {
+        const div = document.createElement('div');
+        div.className = 'card p-4 relative group border-slate-200 hover:border-blue-300 transition-colors';
+        div.innerHTML = `
+          <div class="flex items-start gap-4">
+            <div class="w-7 h-7 bg-slate-100 rounded-full flex items-center justify-center font-bold text-xs text-slate-600 flex-shrink-0 mt-1">
+              ${index + 1}
+            </div>
+            <div class="flex-1 space-y-3">
+              <div class="flex items-center gap-3">
+                <input 
+                  type="text" 
+                  value="${escapeHtml(c.name)}" 
+                  placeholder="Nombre del criterio (Ej: Estructura y Coherencia)" 
+                  class="form-input font-medium text-slate-800"
+                  data-criterion-field="name"
+                  data-index="${index}"
+                />
+                <div class="flex items-center gap-1.5 flex-shrink-0">
+                  <label class="text-xs text-slate-500 font-semibold">Puntaje:</label>
+                  <input 
+                    type="number" 
+                    value="${c.maxScore}" 
+                    min="1" 
+                    max="100" 
+                    class="form-input w-20 text-center font-bold text-blue-700"
+                    data-criterion-field="maxScore"
+                    data-index="${index}"
+                  />
+                  <span class="text-xs text-slate-400">pts</span>
+                </div>
+                <button type="button" data-action="remove-criterion" data-index="${index}" class="text-slate-300 hover:text-red-500 p-1" title="Eliminar criterio">
+                  ✕
+                </button>
+              </div>
+              <textarea 
+                rows="2" 
+                placeholder="Descripción del criterio y qué se espera evaluar..." 
+                class="form-textarea text-xs"
+                data-criterion-field="description"
+                data-index="${index}"
+              >${escapeHtml(c.description || '')}</textarea>
+            </div>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+
+      updateTotal();
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function addCriterion(name = '', description = '', maxScore = 20) {
+      criteria.push({
+        id: 'temp_' + Date.now() + Math.random(),
+        name,
+        description,
+        maxScore
+      });
+      renderCriteria();
+    }
+
+    function removeCriterion(index) {
+      criteria.splice(index, 1);
+      renderCriteria();
+    }
+
+    function updateCriterionField(index, field, value) {
+      criteria[index][field] = value;
+      if (field === 'maxScore') updateTotal();
+    }
+
+    function updateTotal() {
+      const total = criteria.reduce((sum, c) => sum + (parseFloat(c.maxScore) || 0), 0);
+      document.getElementById('total-score-badge').textContent = total;
+    }
+
+    function loadDefaultAcademicCriteria() {
+      if (criteria.length > 0 && !confirm('¿Desea reemplazar los criterios actuales por la plantilla predefinida?')) {
+        return;
+      }
+      criteria = [
+        { name: 'Estructura y Organización', description: 'El texto presenta introducción, desarrollo y conclusión bien delimitados, con secuencia lógica.', maxScore: 20 },
+        { name: 'Ortografía y Gramática', description: 'Corrección léxica, acentuación, puntuación y sintaxis adecuada a nivel académico.', maxScore: 20 },
+        { name: 'Comprensión y Dominio del Tema', description: 'Demuestra entendimiento profundo del texto base, identifica tesis y conceptos clave sin tergiversaciones.', maxScore: 25 },
+        { name: 'Redacción y Coherencia Argumentativa', description: 'Fluidez verbal, conectores adecuados y precisión terminológica.', maxScore: 20 },
+        { name: 'Capacidad de Síntesis y Originalidad', description: 'Sintetiza lo sustancial con palabras propias evitando el parafraseo mecánico o la copia textual.', maxScore: 15 }
+      ];
+      renderCriteria();
+      showToast('Criterios académicos estándar cargados');
+    }
+
+    document.getElementById('btn-save-rubric').addEventListener('click', saveRubric);
+    document.getElementById('btn-add-criterion').addEventListener('click', () => addCriterion());
+    document.getElementById('btn-load-default-criteria').addEventListener('click', loadDefaultAcademicCriteria);
+    document.querySelectorAll('[data-dismiss-flash]').forEach(button => {
+      button.addEventListener('click', () => button.parentElement.remove());
+    });
+
+    const criteriaContainer = document.getElementById('criteria-container');
+    criteriaContainer.addEventListener('input', event => {
+      const field = event.target.closest('[data-criterion-field]');
+      if (!field) return;
+      const value = field.dataset.criterionField === 'maxScore'
+        ? parseFloat(field.value) || 0
+        : field.value;
+      updateCriterionField(Number(field.dataset.index), field.dataset.criterionField, value);
+    });
+    criteriaContainer.addEventListener('click', event => {
+      const button = event.target.closest('[data-action]');
+      if (!button) return;
+      if (button.dataset.action === 'add-criterion') addCriterion();
+      if (button.dataset.action === 'remove-criterion') removeCriterion(Number(button.dataset.index));
+    });
+
+    async function saveRubric() {
+      const name = document.getElementById('rubric-name').value.trim();
+      if (!name) {
+        showToast('Debe ingresar un nombre para la rúbrica', 'error');
+        return;
+      }
+      if (criteria.length === 0) {
+        showToast('Debe agregar al menos un criterio evaluativo', 'error');
+        return;
+      }
+
+      for (let i = 0; i < criteria.length; i++) {
+        if (!criteria[i].name.trim()) {
+          showToast(`El criterio #${i + 1} requiere un nombre`, 'error');
+          return;
+        }
+      }
+
+      const btn = document.getElementById('btn-save-rubric');
+      const prevText = btn.innerHTML;
+      btn.innerHTML = 'Guardando...';
+      btn.disabled = true;
+
+      try {
+        const payload = {
+          name,
+          description: document.getElementById('rubric-desc').value.trim(),
+          criteria: criteria.map((c, i) => ({
+            name: c.name,
+            description: c.description,
+            maxScore: parseFloat(c.maxScore) || 0,
+            order: i,
+            levels: typeof c.levels === 'string' ? c.levels : (c.levels ? JSON.stringify(c.levels) : null)
+          }))
+        };
+
+        const res = await fetch('/rubricas/api/actividad/<%= activity.id %>', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          showToast('Rúbrica guardada exitosamente');
+          setTimeout(() => {
+            window.location.href = '/actividades/<%= activity.id %>';
+          }, 800);
+        } else {
+          showToast(data.error || 'Error al guardar rúbrica', 'error');
+          btn.innerHTML = prevText;
+          btn.disabled = false;
+        }
+      } catch (err) {
+        showToast('Error de red al conectar con el servidor', 'error');
+        btn.innerHTML = prevText;
+        btn.disabled = false;
+      }
+    }
+
+    // Inicializar renderizado
+    renderCriteria();
+  </script>
+</body>
+</html>

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title><%= title %> – EvaluadorIA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/css/app.css"/>
+</head>
+<body class="bg-slate-50 font-sans text-slate-700 min-h-screen flex">
+  <%- include('../partials/sidebar') %>
+  <div class="flex-1 flex flex-col ml-64">
+    <%- include('../partials/topbar') %>
+    <main class="flex-1 p-6">
+      <% if (locals.flashMessages && flashMessages.length > 0) { %>
+        <div class="mb-4 space-y-2">
+          <% flashMessages.forEach(msg => { %>
+            <div class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium <%= msg.type === 'success' ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-red-50 border border-red-200 text-red-800' %>">
+              <%= msg.message %>
+              <button onclick="this.parentElement.remove()" class="ml-auto">✕</button>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+
+      <div class="mb-6 flex items-center justify-between">
+        <div>
+          <h1 class="page-title">Vista Previa y Confirmación de Importación</h1>
+          <p class="page-subtitle">Verifica los datos extraídos de los documentos antes de guardarlos en el sistema.</p>
+        </div>
+      </div>
+
+      <form method="POST" action="/entregas/actividad/<%= activityId %>/confirmar">
+        <div class="card overflow-hidden mb-6">
+          <div class="p-4 border-b border-slate-200 bg-slate-50/50 flex items-center justify-between">
+            <span class="text-xs text-slate-500 font-semibold uppercase tracking-wider">
+              Documentos identificados (<%= documents.length %>)
+            </span>
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="check-all" checked onchange="toggleSelectAll(this)" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+              <label for="check-all" class="text-xs font-medium text-slate-700 cursor-pointer">Seleccionar todos</label>
+            </div>
+          </div>
+
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th class="w-12 text-center">Incluir</th>
+                  <th>Estudiante Asignado</th>
+                  <th>ID / Matrícula</th>
+                  <th>Título del Ensayo</th>
+                  <th>Archivo</th>
+                  <th>Estado Lectura</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% documents.forEach((doc, idx) => { %>
+                  <tr class="<%= doc.isLegible ? '' : 'bg-red-50/30' %>">
+                    <td class="text-center">
+                      <input 
+                        type="checkbox" 
+                        name="documents[<%= idx %>][include]" 
+                        value="true" 
+                        checked 
+                        class="doc-checkbox rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      />
+                    </td>
+                    <td>
+                      <input 
+                        type="text" 
+                        name="documents[<%= idx %>][studentName]" 
+                        value="<%= doc.studentName || 'Estudiante Sin Identificar' %>" 
+                        class="form-input text-xs py-1"
+                        required
+                      />
+                    </td>
+                    <td>
+                      <input 
+                        type="text" 
+                        name="documents[<%= idx %>][studentId]" 
+                        value="<%= doc.studentId || '' %>" 
+                        placeholder="Opcional"
+                        class="form-input text-xs py-1 w-28"
+                      />
+                    </td>
+                    <td>
+                      <input 
+                        type="text" 
+                        name="documents[<%= idx %>][title]" 
+                        value="<%= doc.detectedTitle || doc.originalName %>" 
+                        class="form-input text-xs py-1"
+                      />
+                    </td>
+                    <td class="text-xs text-slate-500 max-w-xs truncate" title="<%= doc.originalName %>">
+                      <%= doc.originalName %>
+                      <div class="text-[10px] text-slate-400"><%= (doc.fileSize / 1024).toFixed(1) %> KB · <%= doc.pages %> pág(s)</div>
+                    </td>
+                    <td>
+                      <% if (doc.isLegible) { %>
+                        <span class="badge badge-green">Legible</span>
+                      <% } else { %>
+                        <span class="badge badge-red" title="Poco o ningún texto extraíble">Ilegible / Escaneo</span>
+                      <% } %>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-3">
+          <a href="/actividades/<%= activityId %>" class="btn-secondary">Descartar</a>
+          <button type="submit" class="btn-primary">Confirmar e Importar <%= documents.length %> Entregas</button>
+        </div>
+      </form>
+    </main>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    function toggleSelectAll(master) {
+      document.querySelectorAll('.doc-checkbox').forEach(cb => {
+        cb.checked = master.checked;
+      });
+    }
+  </script>
+</body>
+</html>
